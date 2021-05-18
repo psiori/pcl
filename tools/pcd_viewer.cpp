@@ -155,13 +155,22 @@ pcl::search::KdTree<pcl::PointXYZ> search;
 pcl::PCLPointCloud2::Ptr cloud;
 pcl::PointCloud<pcl::PointXYZ>::Ptr xyzcloud;
 std::vector<std::string> current_spheres;
+std::vector<std::string> current_text;
 
-void removeSphere(const pcl::visualization::KeyboardEvent &event) {
+void
+removeSphere(const pcl::visualization::KeyboardEvent& event)
+{
   if (event.keyDown() && event.getKeySym() == "z") {
     if (current_spheres.size() > 0) {
       p->removeShape(current_spheres.back());
       current_spheres.pop_back();
-    } else {
+
+      if (current_text.size() > 0) {
+      p->removeShape(current_text.back());
+      current_text.pop_back();
+    }
+    }
+    else {
       PCL_INFO("No picked point to unpick.");
     }
   }
@@ -215,23 +224,29 @@ pp_callback (const pcl::visualization::PointPickingEvent& event, void* cookie)
     ph_global.addFeatureHistogram (*cloud, cloud->fields[i].name, idx, ss.str ());
     ph_global.renderOnce ();
   }
-  if (p)
-  {
-    pcl::PointXYZ pos;
-    event.getPoint (pos.x, pos.y, pos.z);
-    p->addText3D<pcl::PointXYZ> (ss.str (), pos, 0.0005, 1.0, 1.0, 1.0, ss.str ());
-  }
+  // if (p) {
+  //   pcl::PointXYZ pos;
+  //   event.getPoint(pos.x, pos.y, pos.z);
+  //   p->addText3D<pcl::PointXYZ>(ss.str(), pos, 0.0005, 1.0, 1.0, 1.0, ss.str());
+  // }
   if (p) {
     PCL_INFO("Adding Sphere");
     pcl::PointXYZ pos;
     event.getPoint(pos.x, pos.y, pos.z);
-    p->addText3D<pcl::PointXYZ>(ss.str(), pos, 0.0005, 1.0, 1.0, 1.0, ss.str());
+
+    // Draw coordinates as text
+    std::stringstream text;
+    text.precision(1);
+    text << std::fixed << "  (" << pos.x << "," << pos.y << ", " << pos.z << ")";
+    std::string text_id = "sphere-text-" + std::to_string(current_text.size());
+    p->addText3D<pcl::PointXYZ>(text.str(), pos, 0.5, 1.0, 1.0, 1.0, text_id);
+    current_text.push_back(text_id);
+
     // Add a marker to the picket point
     std::string name = "sphere-" + std::to_string(current_spheres.size());
-    p->addSphere<pcl::PointXYZ>(pos, 0.01, 1, 0, 0, name);
-    p->setPointCloudRenderingProperties(
-            pcl::visualization::PCL_VISUALIZER_OPACITY, 0.3,
-            name);
+    p->addSphere<pcl::PointXYZ>(pos, 0.2, 1, 0, 0, name);
+    // p->setPointCloudRenderingProperties(
+    //     pcl::visualization::PCL_VISUALIZER_OPACITY, 0.3, name);
     current_spheres.push_back(name);
   }
 
